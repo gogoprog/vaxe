@@ -327,38 +327,38 @@ endfunction
 
 " Sets the makeprg
 function! vaxe#SetCompiler()
-    if !g:vaxe_set_makeprg
-       return
-    endif
-    let abspath = []
-    let escaped_wd = fnameescape(g:vaxe_working_directory)
-    let dirs = split(&tags, ",")
-    if !match(dirs, g:vaxe_working_directory)
-        let &tags = &tags . ',' . g:vaxe_working_directory
+   if g:vaxe_set_makeprg
+       let abspath = []
+       let escaped_wd = fnameescape(g:vaxe_working_directory)
+       let dirs = split(&tags, ",")
+       if !match(dirs, g:vaxe_working_directory)
+           let &tags = &tags . ',' . g:vaxe_working_directory
+       endif
+
+       if exists("g:vaxe_lime") || exists("b:vaxe_lime")
+           let build_verb = "build"
+           if g:vaxe_lime_test_on_build
+               let build_verb = "test"
+           endif
+           let build_command = "cd " . escaped_wd . " && "
+                       \."lime ".build_verb." ". g:vaxe_lime_target . " 2>&1"
+       elseif exists("g:vaxe_flow") || exists("b:vaxe_flow")
+           let build_command = "cd " . escaped_wd . " && "
+                       \."haxelib run flow build " . g:vaxe_flow_target . " 2>&1"
+       else
+           let vaxe_hxml = vaxe#CurrentBuild()
+           let escaped_hxml = fnameescape(vaxe_hxml)
+           call vaxe#Log("vaxe_hxml: " . vaxe_hxml)
+           let build_command = "cd " . escaped_wd ." &&"
+                       \. g:vaxe_haxe_binary . " " . escaped_hxml . " 2>&1"
+           if filereadable(vaxe_hxml)
+               let lines = readfile(vaxe_hxml)
+           endif
+       endif
+
+       let &l:makeprg = build_command
     endif
 
-    if exists("g:vaxe_lime") || exists("b:vaxe_lime")
-        let build_verb = "build"
-        if g:vaxe_lime_test_on_build
-            let build_verb = "test"
-        endif
-        let build_command = "cd " . escaped_wd . " && "
-                    \."lime ".build_verb." ". g:vaxe_lime_target . " 2>&1"
-    elseif exists("g:vaxe_flow") || exists("b:vaxe_flow")
-        let build_command = "cd " . escaped_wd . " && "
-                    \."haxelib run flow build " . g:vaxe_flow_target . " 2>&1"
-    else
-        let vaxe_hxml = vaxe#CurrentBuild()
-        let escaped_hxml = fnameescape(vaxe_hxml)
-        call vaxe#Log("vaxe_hxml: " . vaxe_hxml)
-        let build_command = "cd " . escaped_wd ." &&"
-                    \. g:vaxe_haxe_binary . " " . escaped_hxml . " 2>&1"
-        if filereadable(vaxe_hxml)
-            let lines = readfile(vaxe_hxml)
-        endif
-    endif
-
-    let &l:makeprg = build_command
     let &l:errorformat="%W%f:%l: characters %c-%*[0-9] : Warning : %m
                 \,%E%f:%l: characters %c-%*[0-9] : %m
                 \,%E%f:%l: lines %*[0-9]-%*[0-9] : %m"
@@ -370,7 +370,7 @@ function! vaxe#SetCompiler()
         let &l:errorformat .= ",%I%f:%l: %m"
     endif
     " generic catch-all regex that will grab misc stdout
-    let &l:errorformat .= ",%I%m"
+    " let &l:errorformat .= ",%I%m"
 endfunction
 
 " returns a list of compiler class paths
